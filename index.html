@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지도 학습 마스터 퀴즈</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Pretendard', sans-serif;
+            touch-action: pan-y;
+            overflow: hidden;
+            background-color: #f8fafc;
+        }
+
+        .quiz-wrapper {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 1000%; 
+            height: 100%;
+        }
+
+        .question-card-container {
+            width: 10%;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            box-sizing: border-box;
+            height: 100%;
+        }
+
+        .card-content {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 2rem;
+            padding: 2rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .option-item {
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .correct {
+            background-color: #f0fdf4 !important;
+            border-color: #22c55e !important;
+            color: #166534 !important;
+        }
+
+        .wrong {
+            background-color: #fef2f2 !important;
+            border-color: #ef4444 !important;
+            color: #991b1b !important;
+        }
+
+        .progress-bar-container {
+            height: 4px;
+            background: #f1f5f9;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #3b82f6;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        -webkit-tap-highlight-color: transparent;
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <div class="progress-bar-container">
+        <div id="progressBar" class="progress-bar-fill"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b px-6 py-4 flex justify-between items-center z-50">
+        <div>
+            <h1 class="text-base font-extrabold text-slate-800">지도 학습 퀴즈</h1>
+            <p class="text-[9px] text-blue-500 font-bold tracking-tighter uppercase">Hamhyeon High School</p>
+        </div>
+        <div class="bg-slate-50 px-4 py-2 rounded-2xl flex items-center gap-3 border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-bold">SCORE</span>
+            <div id="scoreBoard" class="text-xl font-black text-blue-600">0</div>
+        </div>
+    </header>
+
+    <!-- Quiz Main Viewport -->
+    <main class="flex-grow overflow-hidden relative" id="sliderArea">
+        <div class="quiz-wrapper" id="quizWrapper">
+            <!-- Questions injected via JS -->
+        </div>
+    </main>
+
+    <!-- Navigation & Footer -->
+    <footer class="bg-white border-t flex flex-col shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+        <div class="p-6 flex justify-between items-center">
+            <button id="btnPrev" class="w-12 h-12 flex items-center justify-center bg-slate-100 text-slate-400 rounded-full disabled:opacity-20 transition-opacity">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            
+            <div class="text-center">
+                <div id="pageCounter" class="text-slate-900 font-black text-lg leading-none">1 / 10</div>
+                <div class="text-[9px] text-slate-300 font-medium mt-1">SWIPE OR CLICK</div>
+            </div>
+
+            <button id="btnNext" class="w-12 h-12 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg shadow-blue-100 transition-transform active:scale-90">
+                <svg id="nextIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Copyright Section -->
+        <div class="pb-4 pt-0 text-center">
+            <p class="text-[10px] text-slate-300 font-medium">2026 함현고등학교. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Result Modal -->
+    <div id="resultModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
+        <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
+            <div class="text-5xl mb-6">🎯</div>
+            <h2 class="text-2xl font-black text-slate-800 mb-2">학습 완료!</h2>
+            <p class="text-slate-400 mb-8 font-medium">지도 학습의 기초를 다졌습니다.</p>
+            <div class="bg-slate-50 rounded-3xl py-8 mb-8 border border-slate-100">
+                <span id="finalScore" class="text-6xl font-black text-blue-600">0</span>
+                <span class="text-xl font-bold text-blue-200"> / 10</span>
+            </div>
+            <button onclick="location.reload()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-100">
+                다시 시작하기
+            </button>
+            <p class="text-[10px] text-slate-400 mt-6 font-medium">2026 함현고등학교</p>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { q: "지도 학습(Supervised Learning)의 정의로 가장 적절한 것은?", a: ["정답이 없는 데이터의 특징 찾기", "문제와 정답(레이블)을 함께 학습하기", "보상을 최대화하는 방향으로 학습하기", "차원을 축소하여 시각화하기", "기계가 스스로 목표 설정하기"], c: 1 },
+            { q: "지도 학습의 두 가지 주요 문제 유형은?", a: ["군집과 분류", "회귀와 분류", "군집과 회귀", "생성과 강화", "차원 축소와 시각화"], c: 1 },
+            { q: "이메일이 스팸인지 아닌지 판별하는 것은 어떤 문제인가?", a: ["회귀", "군집", "차원 축소", "분류", "강화 학습"], c: 3 },
+            { q: "공부 시간에 따른 시험 점수를 예측하는 것은 어떤 문제인가?", a: ["분류", "회귀", "군집", "데이터 마이닝", "비지도 학습"], c: 1 },
+            { q: "학습에 사용하지 않은 테스트 데이터를 사용하는 주된 이유는?", a: ["저장 공간 절약", "일반화 성능 확인", "학습 속도 향상", "데이터 보안 유지", "컴퓨터 사양 확인"], c: 1 },
+            { q: "다음 중 지도 학습 알고리즘이 아닌 것은?", a: ["선형 회귀", "k-최근접 이웃(k-NN)", "의사결정 나무", "k-평균 군집화(k-Means)", "서포트 벡터 머신"], c: 3 },
+            { q: "훈련 데이터에 너무 과하게 최적화되어 실전 성능이 떨어지는 상태는?", a: ["과소적합", "과적합(Overfitting)", "정규화", "데이터 증강", "활성화"], c: 1 },
+            { q: "선택지가 '정상' 혹은 '사기'처럼 둘 중 하나인 분류 방식은?", a: ["다중 분류", "이진 분류", "연속 회귀", "비지도 군집", "조건부 강화"], c: 1 },
+            { q: "지도 학습에서 기계가 배워야 할 '정답'을 의미하는 용어는?", a: ["특징(Feature)", "노드(Node)", "레이블(Label)", "가중치(Weight)", "편향(Bias)"], c: 2 },
+            { q: "회귀 모델 학습 시 모델이 정답과 얼마나 틀렸는지 나타내는 지표는?", a: ["정확도", "오차(Error)", "데이터 수", "특징 수", "학습 시간"], c: 1 }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let scoredQuestions = new Array(10).fill(false);
+
+        const wrapper = document.getElementById('quizWrapper');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const progressBar = document.getElementById('progressBar');
+        const pageCounter = document.getElementById('pageCounter');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+
+        function init() {
+            questions.forEach((item, idx) => {
+                const container = document.createElement('div');
+                container.className = 'question-card-container';
+                container.innerHTML = `
+                    <div class="card-content">
+                        <div class="flex justify-between items-center mb-6">
+                            <span class="text-[10px] font-black text-slate-300 tracking-widest uppercase">Question 0${idx + 1}</span>
+                            <div id="status-${idx}" class="hidden w-2 h-2 rounded-full"></div>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 mb-8 leading-tight">${item.q}</h2>
+                        <div class="space-y-3" id="group-${idx}">
+                            ${item.a.map((opt, i) => `
+                                <button onclick="handleAnswer(${idx}, ${i})" 
+                                        id="opt-${idx}-${i}"
+                                        class="option-item w-full p-4 border-2 border-slate-100 rounded-2xl text-left flex items-center hover:bg-slate-50">
+                                    <span class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-slate-50 text-slate-400 rounded-xl text-[10px] font-black mr-4 border border-slate-100 uppercase tracking-tighter">${String.fromCharCode(65 + i)}</span>
+                                    <span class="text-slate-700 font-semibold text-sm">${opt}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                wrapper.appendChild(container);
+            });
+            updateUI();
+        }
+
+        function handleAnswer(qIdx, optIdx) {
+            if (scoredQuestions[qIdx]) return;
+
+            scoredQuestions[qIdx] = true;
+            const isCorrect = optIdx === questions[qIdx].c;
+            const btn = document.getElementById(`opt-${qIdx}-${optIdx}`);
+            const status = document.getElementById(`status-${qIdx}`);
+            
+            status.classList.remove('hidden');
+            if (isCorrect) {
+                btn.classList.add('correct');
+                status.classList.add('bg-green-500');
+                score++;
+            } else {
+                btn.classList.add('wrong');
+                status.classList.add('bg-red-500');
+                document.getElementById(`opt-${qIdx}-${questions[qIdx].c}`).classList.add('correct');
+            }
+            
+            scoreBoard.innerText = score;
+            
+            setTimeout(() => {
+                if (currentIndex < 9) move(1);
+                else showResult();
+            }, 800);
+        }
+
+        function move(step) {
+            currentIndex = Math.max(0, Math.min(9, currentIndex + step));
+            wrapper.style.transform = `translateX(-${currentIndex * 10}%)`;
+            updateUI();
+        }
+
+        function updateUI() {
+            progressBar.style.width = `${((currentIndex + 1) / 10) * 100}%`;
+            pageCounter.innerText = `${currentIndex + 1} / 10`;
+            btnPrev.disabled = currentIndex === 0;
+            
+            const nextIcon = document.getElementById('nextIcon');
+            if (currentIndex === 9) {
+                nextIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />`;
+                btnNext.classList.replace('bg-blue-600', 'bg-green-600');
+            } else {
+                nextIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />`;
+                btnNext.classList.replace('bg-green-600', 'bg-blue-600');
+            }
+        }
+
+        function showResult() {
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('resultModal').classList.remove('hidden');
+        }
+
+        let touchStartX = 0;
+        document.getElementById('sliderArea').addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+        }, {passive: true});
+
+        document.getElementById('sliderArea').addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 60) {
+                if (diff > 0) move(1);
+                else move(-1);
+            }
+        });
+
+        btnPrev.onclick = () => move(-1);
+        btnNext.onclick = () => {
+            if (currentIndex === 9) showResult();
+            else move(1);
+        };
+
+        window.onload = init;
+    </script>
+</body>
+</html>
