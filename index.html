@@ -3,280 +3,301 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지도 학습 마스터 퀴즈</title>
+    <title>운명의 친구 찾기 - 의사결정 트리</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
-        
-        body {
-            font-family: 'Pretendard', sans-serif;
-            touch-action: pan-y;
-            overflow: hidden;
-            background-color: #f8fafc;
+        .tree-node {
+            transition: all 0.3s ease;
         }
-
-        .quiz-wrapper {
-            display: flex;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 1000%; 
-            height: 100%;
+        .student-tag {
+            display: inline-block;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 2px 6px;
+            margin: 2px;
+            font-size: 0.75rem;
         }
-
-        .question-card-container {
-            width: 10%;
-            flex-shrink: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .connector {
+            width: 2px;
+            background: #cbd5e1;
+            margin: 0 auto;
+            height: 20px;
+        }
+        .group-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
             padding: 1rem;
-            box-sizing: border-box;
-            height: 100%;
+            min-height: 100px;
         }
-
-        .card-content {
-            width: 100%;
-            max-width: 500px;
-            background: white;
-            border-radius: 2rem;
-            padding: 2rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
-        }
-
-        .option-item {
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .correct {
-            background-color: #f0fdf4 !important;
-            border-color: #22c55e !important;
-            color: #166534 !important;
-        }
-
-        .wrong {
-            background-color: #fef2f2 !important;
-            border-color: #ef4444 !important;
-            color: #991b1b !important;
-        }
-
-        .progress-bar-container {
-            height: 4px;
-            background: #f1f5f9;
-            width: 100%;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 100;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: #3b82f6;
-            width: 0%;
-            transition: width 0.4s ease;
-        }
-
-        -webkit-tap-highlight-color: transparent;
+        .group-size-ok { border-color: #10b981; background-color: #ecfdf5; }
+        .group-size-bad { border-color: #ef4444; background-color: #fef2f2; }
+        .group-size-warn { border-color: #f59e0b; background-color: #fffbeb; }
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">🤝 고2 운명의 친구 찾기 시스템</h1>
+            <p class="text-gray-600">스프레드시트 응답 데이터를 기반으로 팀을 자동 배정합니다.</p>
+        </header>
 
-    <div class="progress-bar-container">
-        <div id="progressBar" class="progress-bar-fill"></div>
-    </div>
-
-    <!-- Header -->
-    <header class="bg-white border-b px-6 py-4 flex justify-between items-center z-50">
-        <div>
-            <h1 class="text-base font-extrabold text-slate-800">지도 학습 퀴즈</h1>
-            <p class="text-[9px] text-blue-500 font-bold tracking-tighter uppercase">Hamhyeon High School</p>
-        </div>
-        <div class="bg-slate-50 px-4 py-2 rounded-2xl flex items-center gap-3 border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold">SCORE</span>
-            <div id="scoreBoard" class="text-xl font-black text-blue-600">0</div>
-        </div>
-    </header>
-
-    <!-- Quiz Main Viewport -->
-    <main class="flex-grow overflow-hidden relative" id="sliderArea">
-        <div class="quiz-wrapper" id="quizWrapper">
-            <!-- Questions injected via JS -->
-        </div>
-    </main>
-
-    <!-- Navigation & Footer -->
-    <footer class="bg-white border-t flex flex-col shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
-        <div class="p-6 flex justify-between items-center">
-            <button id="btnPrev" class="w-12 h-12 flex items-center justify-center bg-slate-100 text-slate-400 rounded-full disabled:opacity-20 transition-opacity">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                </svg>
-            </button>
-            
-            <div class="text-center">
-                <div id="pageCounter" class="text-slate-900 font-black text-lg leading-none">1 / 10</div>
-                <div class="text-[9px] text-slate-300 font-medium mt-1">SWIPE OR CLICK</div>
+        <!-- 컨트롤 패널 -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex gap-4 items-center">
+                <div id="status" class="text-base font-bold text-blue-600">스프레드시트 데이터를 분석하는 중입니다...</div>
             </div>
-
-            <button id="btnNext" class="w-12 h-12 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg shadow-blue-100 transition-transform active:scale-90">
-                <svg id="nextIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                </svg>
-            </button>
-        </div>
-        
-        <!-- Copyright Section -->
-        <div class="pb-4 pt-0 text-center">
-            <p class="text-[10px] text-slate-300 font-medium">2026 함현고등학교. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <!-- Result Modal -->
-    <div id="resultModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
-            <div class="text-5xl mb-6">🎯</div>
-            <h2 class="text-2xl font-black text-slate-800 mb-2">학습 완료!</h2>
-            <p class="text-slate-400 mb-8 font-medium">지도 학습의 기초를 다졌습니다.</p>
-            <div class="bg-slate-50 rounded-3xl py-8 mb-8 border border-slate-100">
-                <span id="finalScore" class="text-6xl font-black text-blue-600">0</span>
-                <span class="text-xl font-bold text-blue-200"> / 10</span>
+            <div class="flex gap-2">
+                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded-full"></span> 2~3명(완벽)</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-500 rounded-full"></span> 1명 또는 4명</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded-full"></span> 재분류 필요</span>
             </div>
-            <button onclick="location.reload()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-100">
-                다시 시작하기
-            </button>
-            <p class="text-[10px] text-slate-400 mt-6 font-medium">2026 함현고등학교</p>
         </div>
+
+        <!-- 시각화 영역 -->
+        <div id="treeContainer" class="space-y-12">
+            <!-- 질문별 레벨이 여기에 렌더링됩니다 -->
+            <div id="rootNode" class="flex justify-center">
+                <div class="bg-white p-6 rounded-2xl shadow-md border-2 border-blue-200 text-center w-full max-w-sm">
+                    <h3 class="font-bold text-lg mb-2">전체 학생 (31명)</h3>
+                    <div id="initialNames" class="flex flex-wrap justify-center overflow-y-auto max-h-32">
+                        <!-- 초기 명단 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 최종 팀 결과 -->
+        <div id="finalResults" class="mt-16 hidden">
+            <h2 class="text-2xl font-bold text-center mb-8">✨ 최종 확정된 팀 명단</h2>
+            <div id="teamGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- 최종 팀 카드 -->
+            </div>
+        </div>
+
+        <!-- 푸터 추가 -->
+        <footer class="mt-16 pb-8 text-center text-gray-400 text-sm border-t border-gray-200 pt-8">
+            <p>&copy; 2026 함현고등학교. All rights reserved.</p>
+            <p class="mt-1">Developed by 강문희</p>
+        </footer>
     </div>
 
     <script>
-        const questions = [
-            { q: "지도 학습(Supervised Learning)의 정의로 가장 적절한 것은?", a: ["정답이 없는 데이터의 특징 찾기", "문제와 정답(레이블)을 함께 학습하기", "보상을 최대화하는 방향으로 학습하기", "차원을 축소하여 시각화하기", "기계가 스스로 목표 설정하기"], c: 1 },
-            { q: "지도 학습의 두 가지 주요 문제 유형은?", a: ["군집과 분류", "회귀와 분류", "군집과 회귀", "생성과 강화", "차원 축소와 시각화"], c: 1 },
-            { q: "이메일이 스팸인지 아닌지 판별하는 것은 어떤 문제인가?", a: ["회귀", "군집", "차원 축소", "분류", "강화 학습"], c: 3 },
-            { q: "공부 시간에 따른 시험 점수를 예측하는 것은 어떤 문제인가?", a: ["분류", "회귀", "군집", "데이터 마이닝", "비지도 학습"], c: 1 },
-            { q: "학습에 사용하지 않은 테스트 데이터를 사용하는 주된 이유는?", a: ["저장 공간 절약", "일반화 성능 확인", "학습 속도 향상", "데이터 보안 유지", "컴퓨터 사양 확인"], c: 1 },
-            { q: "다음 중 지도 학습 알고리즘이 아닌 것은?", a: ["선형 회귀", "k-최근접 이웃(k-NN)", "의사결정 나무", "k-평균 군집화(k-Means)", "서포트 벡터 머신"], c: 3 },
-            { q: "훈련 데이터에 너무 과하게 최적화되어 실전 성능이 떨어지는 상태는?", a: ["과소적합", "과적합(Overfitting)", "정규화", "데이터 증강", "활성화"], c: 1 },
-            { q: "선택지가 '정상' 혹은 '사기'처럼 둘 중 하나인 분류 방식은?", a: ["다중 분류", "이진 분류", "연속 회귀", "비지도 군집", "조건부 강화"], c: 1 },
-            { q: "지도 학습에서 기계가 배워야 할 '정답'을 의미하는 용어는?", a: ["특징(Feature)", "노드(Node)", "레이블(Label)", "가중치(Weight)", "편향(Bias)"], c: 2 },
-            { q: "회귀 모델 학습 시 모델이 정답과 얼마나 틀렸는지 나타내는 지표는?", a: ["정확도", "오차(Error)", "데이터 수", "특징 수", "학습 시간"], c: 1 }
-        ];
+        // 스프레드시트 설정 (CSV 배포 URL)
+        // 주의: 스프레드시트에서 '파일 > 공유 > 웹에 게시 > 전체 문서(또는 시트1)를 CSV로 선택' 후 얻은 URL을 사용해야 합니다.
+        const SHEET_ID = '1SHjvFSY6I8feE3Ts5LHEcJJkdv8OTmhaXlsZSwrQTHU';
+        const GID = '838320863';
+        
+        // 데이터를 더 안정적으로 가져오기 위해 Google Visualization API 엔드포인트 사용
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
 
-        let currentIndex = 0;
-        let score = 0;
-        let scoredQuestions = new Array(10).fill(false);
+        let students = [];
+        const questions = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'];
 
-        const wrapper = document.getElementById('quizWrapper');
-        const scoreBoard = document.getElementById('scoreBoard');
-        const progressBar = document.getElementById('progressBar');
-        const pageCounter = document.getElementById('pageCounter');
-        const btnPrev = document.getElementById('btnPrev');
-        const btnNext = document.getElementById('btnNext');
+        const statusText = document.getElementById('status');
+        const treeContainer = document.getElementById('treeContainer');
+        const teamGrid = document.getElementById('teamGrid');
+        const finalResults = document.getElementById('finalResults');
 
-        function init() {
-            questions.forEach((item, idx) => {
-                const container = document.createElement('div');
-                container.className = 'question-card-container';
-                container.innerHTML = `
-                    <div class="card-content">
-                        <div class="flex justify-between items-center mb-6">
-                            <span class="text-[10px] font-black text-slate-300 tracking-widest uppercase">Question 0${idx + 1}</span>
-                            <div id="status-${idx}" class="hidden w-2 h-2 rounded-full"></div>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 mb-8 leading-tight">${item.q}</h2>
-                        <div class="space-y-3" id="group-${idx}">
-                            ${item.a.map((opt, i) => `
-                                <button onclick="handleAnswer(${idx}, ${i})" 
-                                        id="opt-${idx}-${i}"
-                                        class="option-item w-full p-4 border-2 border-slate-100 rounded-2xl text-left flex items-center hover:bg-slate-50">
-                                    <span class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-slate-50 text-slate-400 rounded-xl text-[10px] font-black mr-4 border border-slate-100 uppercase tracking-tighter">${String.fromCharCode(65 + i)}</span>
-                                    <span class="text-slate-700 font-semibold text-sm">${opt}</span>
-                                </button>
-                            `).join('')}
-                        </div>
+        // 페이지 로드 시 자동으로 데이터 가져오기 및 트리 렌더링 실행
+        window.addEventListener('DOMContentLoaded', loadData);
+
+        async function loadData() {
+            statusText.innerText = "데이터 파싱 중...";
+            try {
+                const response = await fetch(CSV_URL);
+                if (!response.ok) throw new Error("네트워크 응답 오류 (접근 권한 문제일 수 있습니다.)");
+                
+                const csvData = await response.text();
+                
+                // 스프레드시트가 비공개 상태이면 HTML 로그인 페이지가 반환됨
+                if (csvData.trim().startsWith('<!DOCTYPE html>')) {
+                    throw new Error("스프레드시트가 비공개 상태입니다.");
+                }
+
+                Papa.parse(csvData, {
+                    header: false, // 헤더 이름에 의존하지 않고 0번째, 1번째 등의 열 인덱스로 접근
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        processStudents(results.data);
+                    },
+                    error: (err) => {
+                        throw new Error("CSV 파싱 에러");
+                    }
+                });
+            } catch (e) {
+                console.error(e);
+                statusText.innerHTML = `<span class="text-red-600">오류: ${e.message} <br>💡 <b>해결방법: 스프레드시트 우측 상단 [공유] ➔ [일반 액세스: 링크가 있는 모든 사용자(뷰어)]</b>로 변경해주세요!<br>(현재는 테스트를 위해 가상의 임시 데이터로 화면을 구성합니다.)</span>`;
+                loadFallbackData();
+            }
+        }
+
+        function processStudents(data) {
+            const rows = data.slice(1); // 첫 줄(헤더) 제외
+            
+            // 보통 0열: 타임스탬프, 1열: 이름, 2~7열: 답변이라고 가정
+            students = rows.filter(row => row.length >= 3 && row[1]).map(row => ({
+                name: row[1].replace(/\"/g, "").trim(), // 따옴표 및 공백 제거
+                answers: [
+                    row[2] || "",
+                    row[3] || "",
+                    row[4] || "",
+                    row[5] || "",
+                    row[6] || "",
+                    row[7] || ""
+                ]
+            }));
+
+            if (students.length === 0) {
+                throw new Error("유효한 이름 데이터를 찾지 못했습니다.");
+            }
+
+            statusText.innerHTML = `<span class="text-green-600">${students.length}명의 데이터를 성공적으로 불러왔습니다.</span>`;
+            renderTree();
+        }
+
+        function loadFallbackData() {
+            // 구글 시트 권한 오류 등으로 데이터를 못 가져올 때 화면이 멈추지 않도록 가상의 데이터 생성
+            students = Array.from({length: 31}, (_, i) => ({
+                name: `테스트학생${i+1}`,
+                answers: Array.from({length: 6}, () => Math.random() > 0.5 ? 'A' : 'B')
+            }));
+            renderTree();
+        }
+
+        function renderTree() {
+            // 초기화
+            treeContainer.innerHTML = '';
+            
+            // 트리 구조 구축
+            let currentGroups = [{
+                path: [],
+                members: students,
+                title: "전체"
+            }];
+
+            // 질문 단계별로 진행 (최대 6단계)
+            for (let i = 0; i < questions.length; i++) {
+                const levelDiv = document.createElement('div');
+                levelDiv.className = "space-y-4";
+                
+                const questionTitle = document.createElement('h3');
+                questionTitle.className = "text-center font-semibold text-blue-500 uppercase tracking-widest";
+                questionTitle.innerText = `Step ${i+1}: ${questions[i]}`;
+                levelDiv.appendChild(questionTitle);
+
+                const groupContainer = document.createElement('div');
+                groupContainer.className = "flex flex-wrap justify-center gap-4";
+                
+                let nextGroups = [];
+                let hasSplittableGroups = false;
+
+                currentGroups.forEach(group => {
+                    // 이미 2~3명이면 더 나누지 않음 (선택사항)
+                    if (group.members.length <= 3 && group.members.length >= 2) {
+                        nextGroups.push(group);
+                        renderGroup(groupContainer, group, false);
+                    } else if (group.members.length > 3) {
+                        hasSplittableGroups = true;
+                        // 질문에 따라 분리
+                        const choiceA = [];
+                        const choiceB = [];
+                        
+                        // 해당 질문에 대한 응답값 기준으로 분리
+                        // 실제 응답 텍스트가 다를 수 있으므로 첫 번째 사람의 대답을 기준으로 A/B를 임의 지정
+                        const firstAnswer = group.members[0].answers[i];
+                        
+                        group.members.forEach(m => {
+                            if (m.answers[i] === firstAnswer) choiceA.push(m);
+                            else choiceB.push(m);
+                        });
+
+                        if (choiceA.length > 0) {
+                            nextGroups.push({ path: [...group.path, 'A'], members: choiceA, title: `Q${i+1}:A` });
+                        }
+                        if (choiceB.length > 0) {
+                            nextGroups.push({ path: [...group.path, 'B'], members: choiceB, title: `Q${i+1}:B` });
+                        }
+                        
+                        renderGroup(groupContainer, group, true);
+                    } else {
+                        nextGroups.push(group);
+                        renderGroup(groupContainer, group, false);
+                    }
+                });
+
+                levelDiv.appendChild(groupContainer);
+                treeContainer.appendChild(levelDiv);
+                
+                currentGroups = nextGroups;
+                
+                // 만약 더 이상 나눌 그룹이 없으면 중단
+                if (!hasSplittableGroups) break;
+            }
+
+            renderFinalTeams(currentGroups);
+        }
+
+        function renderGroup(container, group, isParent) {
+            const div = document.createElement('div');
+            const count = group.members.length;
+            let statusClass = "group-size-warn";
+            if (count >= 2 && count <= 3) statusClass = "group-size-ok";
+            else if (count > 3 || count < 2) statusClass = "group-size-bad";
+
+            div.className = `group-card ${statusClass} bg-white shadow-sm w-48 text-center transition-all hover:scale-105`;
+            div.innerHTML = `
+                <div class="text-xs font-bold text-gray-400 mb-1">${group.title || '그룹'}</div>
+                <div class="text-2xl font-black mb-2">${count}명</div>
+                <div class="flex flex-wrap justify-center">
+                    ${group.members.slice(0, 3).map(m => `<span class="student-tag">${m.name}</span>`).join('')}
+                    ${count > 3 ? `<span class="text-xs text-gray-400 mt-1">외 ${count-3}명</span>` : ''}
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function renderFinalTeams(groups) {
+            finalResults.classList.remove('hidden');
+            teamGrid.innerHTML = '';
+            
+            groups.forEach((group, idx) => {
+                const card = document.createElement('div');
+                const count = group.members.length;
+                
+                let bgColor = "bg-white";
+                let borderColor = "border-gray-200";
+                let badgeText = "인원 조정 권장";
+                let badgeClass = "bg-yellow-100 text-yellow-700";
+
+                if (count >= 2 && count <= 3) {
+                    borderColor = "border-green-500";
+                    badgeText = "매칭 완료";
+                    badgeClass = "bg-green-100 text-green-700";
+                }
+
+                card.className = `bg-white rounded-2xl shadow-lg border-t-4 ${borderColor} p-6 flex flex-col`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="text-xl font-bold text-gray-800">${idx + 1}팀</h4>
+                        <span class="px-2 py-1 rounded text-xs font-bold ${badgeClass}">${badgeText}</span>
+                    </div>
+                    <ul class="space-y-2 flex-grow mb-4">
+                        ${group.members.map(m => `
+                            <li class="flex items-center gap-2 text-gray-700">
+                                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                ${m.name}
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <div class="text-xs text-gray-400 italic">
+                        공통점: ${group.path.join(' → ') || '운명의 만남'}
                     </div>
                 `;
-                wrapper.appendChild(container);
+                teamGrid.appendChild(card);
             });
-            updateUI();
         }
-
-        function handleAnswer(qIdx, optIdx) {
-            if (scoredQuestions[qIdx]) return;
-
-            scoredQuestions[qIdx] = true;
-            const isCorrect = optIdx === questions[qIdx].c;
-            const btn = document.getElementById(`opt-${qIdx}-${optIdx}`);
-            const status = document.getElementById(`status-${qIdx}`);
-            
-            status.classList.remove('hidden');
-            if (isCorrect) {
-                btn.classList.add('correct');
-                status.classList.add('bg-green-500');
-                score++;
-            } else {
-                btn.classList.add('wrong');
-                status.classList.add('bg-red-500');
-                document.getElementById(`opt-${qIdx}-${questions[qIdx].c}`).classList.add('correct');
-            }
-            
-            scoreBoard.innerText = score;
-            
-            setTimeout(() => {
-                if (currentIndex < 9) move(1);
-                else showResult();
-            }, 800);
-        }
-
-        function move(step) {
-            currentIndex = Math.max(0, Math.min(9, currentIndex + step));
-            wrapper.style.transform = `translateX(-${currentIndex * 10}%)`;
-            updateUI();
-        }
-
-        function updateUI() {
-            progressBar.style.width = `${((currentIndex + 1) / 10) * 100}%`;
-            pageCounter.innerText = `${currentIndex + 1} / 10`;
-            btnPrev.disabled = currentIndex === 0;
-            
-            const nextIcon = document.getElementById('nextIcon');
-            if (currentIndex === 9) {
-                nextIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />`;
-                btnNext.classList.replace('bg-blue-600', 'bg-green-600');
-            } else {
-                nextIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />`;
-                btnNext.classList.replace('bg-green-600', 'bg-blue-600');
-            }
-        }
-
-        function showResult() {
-            document.getElementById('finalScore').innerText = score;
-            document.getElementById('resultModal').classList.remove('hidden');
-        }
-
-        let touchStartX = 0;
-        document.getElementById('sliderArea').addEventListener('touchstart', e => {
-            touchStartX = e.touches[0].clientX;
-        }, {passive: true});
-
-        document.getElementById('sliderArea').addEventListener('touchend', e => {
-            const touchEndX = e.changedTouches[0].clientX;
-            const diff = touchStartX - touchEndX;
-            if (Math.abs(diff) > 60) {
-                if (diff > 0) move(1);
-                else move(-1);
-            }
-        });
-
-        btnPrev.onclick = () => move(-1);
-        btnNext.onclick = () => {
-            if (currentIndex === 9) showResult();
-            else move(1);
-        };
-
-        window.onload = init;
     </script>
 </body>
 </html>
