@@ -1319,16 +1319,16 @@
                 elements.kmStepBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg> 초기 중심점 설정`;
                 elements.kmStepBtn.className = "w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-sm";
             } else if (kmState.step === 1) {
-                elements.kmStatusText.textContent = "군집 할당 완료";
+                elements.kmStatusText.textContent = "중심점 이동 완료";
                 elements.kmStatusText.className = "text-sm font-black text-blue-600";
-                elements.kmStatusDesc.textContent = "각 데이터가 가장 가까운 중심점(마름모)의 군집으로 할당되었습니다.";
-                elements.kmStepBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg> 중심점 업데이트`;
+                elements.kmStatusDesc.textContent = "중심점이 할당된 군집 데이터들의 평균 위치로 새롭게 이동했습니다.";
+                elements.kmStepBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg> 군집 할당`;
                 elements.kmStepBtn.className = "w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-sm";
             } else if (kmState.step === 2) {
-                elements.kmStatusText.textContent = "중심점 이동 완료";
+                elements.kmStatusText.textContent = "군집 할당 완료";
                 elements.kmStatusText.className = "text-sm font-black text-purple-600";
-                elements.kmStatusDesc.textContent = "중심점이 할당된 군집 데이터들의 평균 위치로 새롭게 이동했습니다.";
-                elements.kmStepBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg> 군집 재할당 검사`;
+                elements.kmStatusDesc.textContent = "각 데이터가 가장 가까운 중심점(마름모)의 군집으로 할당되었습니다.";
+                elements.kmStepBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg> 중심점 업데이트`;
                 elements.kmStepBtn.className = "w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-sm";
             } else if (kmState.step === 3) {
                 elements.kmStatusText.textContent = "시뮬레이션 완료 (수렴)";
